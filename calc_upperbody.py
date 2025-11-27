@@ -1,6 +1,7 @@
+import os
+import argparse
 import open3d as o3d
 import numpy as np
-import argparse
 
 
 def estimate_pelvis_center(human_cloud: o3d.geometry.PointCloud,
@@ -50,8 +51,8 @@ def estimate_pelvis_center(human_cloud: o3d.geometry.PointCloud,
     slice_cloud = o3d.geometry.PointCloud()
     slice_cloud.points = o3d.utility.Vector3dVector(slice_pts)
 
-    print("center:", center)
-    print("min:", pts.min(axis=0), "max:", pts.max(axis=0))
+    # print("center:", center)
+    # print("min:", pts.min(axis=0), "max:", pts.max(axis=0))
 
     return center, slice_cloud
 
@@ -122,56 +123,37 @@ if __name__ == "__main__":
     center, slice_cloud = estimate_pelvis_center(
         human_cloud, pelvis_ratio=0.55, band=500
     )  # pelvis: 94/171cm
-    print("pelvis center:", center)
+
+    # 저장
+    save_dir = os.path.dirname(human_pcd_path)
+    if save_dir == "":
+        save_dir = "."
+
+    filename = os.path.basename(human_pcd_path).split(".")[0]
+
+    # 저장 파일 이름: <원본이름>_pelvis_center.csv
+    save_path = os.path.join(save_dir, f"pelvis-{filename}.csv")
+
+    # mm → cm
+    center_cm = center / 10.0
+    print("pelvis center (cm):", center_cm)
+
+    # CSV로 저장 (콤마 구분)
+    np.savetxt(
+        save_path,
+        center_cm.reshape(1, 3),
+        fmt="%.3f",
+        delimiter=",",
+        header="x_cm,y_cm,z_cm",
+        comments=""
+    )
+
+    print(f"pelvis CSV로 저장됨: {save_path}")
 
     # pelvis 구
     pelvis_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=15)
     pelvis_sphere.translate(center)
     pelvis_sphere.paint_uniform_color([1.0, 0.0, 1.0])  # 핑크
-
-    # ---------- 어깨 추정 (1번 버전) ----------
-    L_shoulder, R_shoulder = estimate_shoulders_simple(
-        human_cloud,
-        pelvis_center=center,
-        shoulder_ratio=0.82,
-        shoulder_width_ratio=0.26,
-    )
-    print("L_shoulder:", L_shoulder)
-    print("R_shoulder:", R_shoulder)
-
-    shoulder_center = 0.5 * (L_shoulder + R_shoulder)
-    print("shoulder_center:", shoulder_center)
-
-    # 어깨 구 시각화
-    L_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.10)
-    L_sphere.translate(L_shoulder)
-    L_sphere.paint_uniform_color([1.0, 0.0, 1.0])
-
-    R_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.10)
-    R_sphere.translate(R_shoulder)
-    R_sphere.paint_uniform_color([1.0, 0.0, 1.0])
-
-    shoulder_center_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.10)
-    shoulder_center_sphere.translate(shoulder_center)
-    shoulder_center_sphere.paint_uniform_color([1.0, 0.0, 1.0])
-
-    # ---------- LineSet으로 4점 연결 ----------
-    # points 배열: [pelvis, L, R, shoulder_center]
-    line_points = np.vstack([center, L_shoulder, R_shoulder, shoulder_center])
-
-    # 선으로 이을 점 인덱스 (위 배열 기준)
-    line_indices = [
-        [0, 3],  # pelvis ↔ shoulder_center
-        [3, 1],  # shoulder_center ↔ L_shoulder
-        [3, 2],  # shoulder_center ↔ R_shoulder
-    ]
-
-    line_set = o3d.geometry.LineSet()
-    line_set.points = o3d.utility.Vector3dVector(line_points)
-    line_set.lines = o3d.utility.Vector2iVector(line_indices)
-    line_set.colors = o3d.utility.Vector3dVector(
-        [[0.0, 1.0, 0.0] for _ in range(len(line_indices))]
-    )
 
     # 라인 지정
     human_cloud.paint_uniform_color([0.7, 0.7, 0.7])
@@ -181,9 +163,7 @@ if __name__ == "__main__":
             human_cloud,
             slice_cloud,
             pelvis_sphere,
-            L_sphere,
-            R_sphere,
-            shoulder_center_sphere,
-            line_set,
+            # L_sphere,
+            # R_sphere,
         ]
     )
