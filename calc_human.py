@@ -92,8 +92,8 @@ if __name__ == "__main__":
     cloud_out, centerPos = pose_detection_open3d(cloud_A, cloud_B, dist_thresh)
 
     # 라이다 - 인간 거리 반영 x앞뒤 y위아래 z좌우
-    min_bound = np.array([0.0, -1100.0, -450.0])
-    max_bound = np.array([3000.0,  665.0,  450.0])
+    min_bound = np.array([0.0, -1100.0, -500.0])
+    max_bound = np.array([3000.0,  500.0,  500.0])
 
     cloud_out = crop_roi(cloud_out, min_bound, max_bound)
 
@@ -108,4 +108,4 @@ if __name__ == "__main__":
     center_pcd.points = o3d.utility.Vector3dVector(centerPos.reshape(1, 3))
     center_pcd.paint_uniform_color([1.0, 0.0, 0.0])
 
-    o3d.visualization.draw_geometries([cloud_out, center_pcd])
+    # o3d.visualization.draw_geometries([cloud_out, center_pcd])
