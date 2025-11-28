@@ -1,23 +1,3 @@
-#!/usr/bin/env python
-"""
-patch_bvh.py
-
-기능
-1) 특정 조인트들의 마지막 프레임 회전을 2번째 프레임 값으로 덮어쓰기 (기존 patch_bvh.py 기능)
-2) convert_coordinate.py 에서 만든 position_vector.csv (pelvis 이동 벡터)를 이용해서
-   마지막 프레임 pelvis(root) position 을
-      = 2번째 프레임 pelvis position + position_vector
-   로 덮어쓰기
-
-- position_vector.csv 예시
-    x_w_cm,y_w_cm,z_w_cm
-    -0.082,0.058,0.906
-
-사용 예시:
-    python patch_bvh.py input.bvh --pelvis_csv position_vector.csv --RightShoulder --RightElbow
-    python patch_bvh.py input.bvh --RightShoulder --RightElbow          # pelvis 수정 없이 각도만
-    python patch_bvh.py input.bvh --pelvis_csv position_vector.csv      # 각도 패치 없이 pelvis만
-"""
 import sys
 import os
 from typing import List, Dict, Optional
@@ -150,14 +130,14 @@ class BVH:
 
 
 # --------------------------
-# 1) 마지막 프레임 각도 덮어쓰기 로직
+# 1) 마지막 프레임 각도 덮어쓰기 로직 (+ 가우시안 노이즈)
 # --------------------------
 
-def apply_angle_patch(bvh: BVH, joint_names: List[str]) -> None:
-    """
-    joint_names 에 포함된 조인트들의 '회전 채널(X/Y/Zrotation)'에 대해
-    마지막 프레임 값을 2번째 프레임(인덱스 1) 값으로 덮어쓴다.
-    """
+def apply_angle_patch(
+    bvh: BVH,
+    joint_names: List[str],
+    std: Optional[float] = None
+) -> None:
     if not joint_names:
         return
 
@@ -169,6 +149,8 @@ def apply_angle_patch(bvh: BVH, joint_names: List[str]) -> None:
 
     start_frame = bvh.motion[start_idx]
     end_frame = bvh.motion[end_idx][:]   # 복사
+
+    use_noise = std is not None and std > 0.0
 
     for name in joint_names:
         j = bvh.joints_by_name.get(name)
@@ -185,7 +167,11 @@ def apply_angle_patch(bvh: BVH, joint_names: List[str]) -> None:
             # 회전 채널만 수정
             if "rotation" in ch or "Rotation" in ch:
                 src_val = start_frame[base + k]
-                end_frame[base + k] = src_val
+                if use_noise:
+                    noise = float(np.random.normal(loc=0.0, scale=std))
+                    end_frame[base + k] = src_val + noise
+                else:
+                    end_frame[base + k] = src_val
 
     # 수정된 마지막 프레임을 되돌려 넣기
     bvh.motion[end_idx] = end_frame
@@ -319,7 +305,10 @@ def write_bvh_with_new_motion(original_text: str, bvh: BVH, out_path: str) -> No
 def main() -> None:
     if len(sys.argv) < 2:
         print("사용법:")
-        print("  python patch_bvh.py input.bvh [--pelvis_csv position_vector.csv] --RightShoulder --RightElbow ...")
+        print("  python patch_bvh.py input.bvh "
+              "[--pelvis_csv position_vector.csv] "
+              "[--std 0.05] "
+              "--RightShoulder --RightElbow ...")
         sys.exit(1)
 
     bvh_path = sys.argv[1]
@@ -329,8 +318,9 @@ def main() -> None:
 
     pelvis_csv_path: Optional[str] = None
     joint_names: List[str] = []
+    std: Optional[float] = None
 
-    # '--조인트이름', '--pelvis_csv 경로' 형식의 인자를 모두 모음
+    # '--조인트이름', '--pelvis_csv 경로', '--std 값' 형식의 인자를 모두 모음
     i = 2
     while i < len(sys.argv):
         arg = sys.argv[i]
@@ -345,6 +335,22 @@ def main() -> None:
                 sys.exit(1)
             pelvis_csv_path = sys.argv[i + 1]
             i += 2
+        elif arg.startswith("--std="):
+            # --std=0.05
+            try:
+                std = float(arg.split("=", 1)[1])
+            except ValueError:
+                sys.exit(1)
+            i += 1
+        elif arg == "--std":
+            # --std 0.05
+            if i + 1 >= len(sys.argv):
+                sys.exit(1)
+            try:
+                std = float(sys.argv[i + 1])
+            except ValueError:
+                sys.exit(1)
+            i += 2
         elif arg.startswith("--") and len(arg) > 2:
             # 그 외의 --Something 은 조인트 이름으로 처리
             joint_names.append(arg[2:])
@@ -352,6 +358,13 @@ def main() -> None:
         else:
             print(f"[주의] 알 수 없는 인자를 무시합니다: {arg}")
             i += 1
+
+    # std 검증 및 0.1 미만으로 제한
+    if std is not None:
+        if std <= 0.0:
+            std = None
+        elif std >= 0.1:
+            std = 0.0999
 
     with open(bvh_path, "r", encoding="utf-8", errors="ignore") as f:
         text = f.read()
@@ -362,8 +375,8 @@ def main() -> None:
     print(f"[정보] 패치 대상 조인트: {', '.join(joint_names) if joint_names else '(없음)'}")
     print(f"[정보] pelvis drift CSV: {pelvis_csv_path if pelvis_csv_path is not None else '(사용 안 함)'}")
 
-    # 1) 각도 패치
-    apply_angle_patch(bvh, joint_names)
+    # 1) 각도 패치 (+ 노이즈)
+    apply_angle_patch(bvh, joint_names, std=std)
 
     # 2) pelvis position drift 적용 (마지막 프레임만)
     if pelvis_csv_path is not None:
