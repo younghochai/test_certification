@@ -30,7 +30,7 @@ def compare_r_hand(csv_path: str):
     print("=== r_hand 위치 비교 ===")
     print(f"3행 r_hand (x, y, z): {start_r_hand}")
     print(f"마지막 행 r_hand (x, y, z): {end_r_hand}")
-    print(f"L2 거리: {l2_dist:.6f}")
+    print(f"L2 거리: {l2_dist:.6f} cm")
 
     return l2_dist
 
