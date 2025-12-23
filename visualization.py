@@ -10,12 +10,14 @@ from endSite import BVH  # 프로젝트의 BVH 파서 사용
 # 오른손 근처 시각화에 사용할 반지름 (cm)
 HAND_SPHERE_RADIUS = 1.5
 
-plt.rcParams.update({
-    "font.size": 14,        # 기본 폰트 크기
-    "axes.labelsize": 16,   # X, Y, Z 라벨
-    "axes.titlesize": 18,   # 타이틀
-    "legend.fontsize": 14,  # 범례 글자
-})
+plt.rcParams.update(
+    {
+        "font.size": 14,  # 기본 폰트 크기
+        "axes.labelsize": 16,  # X, Y, Z 라벨
+        "axes.titlesize": 18,  # 타이틀
+        "legend.fontsize": 14,  # 범례 글자
+    }
+)
 
 
 def load_bvh(path: str) -> BVH:
@@ -348,14 +350,18 @@ def visualize_four_poses(
     center_last = get_right_hand_center(e_last)
 
     pose_infos = [
-        ("Start", "red",    j_start, e_start, bones_start, center_start),
-        ("Return 1", "black", j_mid1,  e_mid1,  bones_mid1,  center_mid1),
-        ("Return 2", "green",  j_mid2,  e_mid2,  bones_mid2,  center_mid2),
-        ("Return 3", "blue",   j_last,  e_last,  bones_last,  center_last),
+        ("Start", "red", j_start, e_start, bones_start, center_start),
+        ("Return 1", "black", j_mid1, e_mid1, bones_mid1, center_mid1),
+        ("Return 2", "green", j_mid2, e_mid2, bones_mid2, center_mid2),
+        ("Return 3", "blue", j_last, e_last, bones_last, center_last),
     ]
 
     # 네 손끝의 평균 중심 (None 아닌 것만 사용)
-    centers = [c for c in (center_start, center_mid1, center_mid2, center_last) if c is not None]
+    centers = [
+        c
+        for c in (center_start, center_mid1, center_mid2, center_last)
+        if c is not None
+    ]
     sphere_center: Optional[np.ndarray] = None
     if centers:
         sphere_center = np.mean(np.stack(centers, axis=0), axis=0)
@@ -382,9 +388,7 @@ def visualize_four_poses(
                 visible_points_acc=all_points,
             )
             # 오른팔 주요 포인트 수집 (손끝/손목/elbow)
-            right_arm_points_all.extend(
-                collect_right_arm_keypoints(joints, ends)
-            )
+            right_arm_points_all.extend(collect_right_arm_keypoints(joints, ends))
 
         # 축 범위 설정
         if all_points:
@@ -453,9 +457,7 @@ def visualize_four_poses(
                 visible_points_acc=visible_full,
             )
             # 오른팔 주요 포인트(손끝/손목/elbow) 수집
-            right_arm_points_full.extend(
-                collect_right_arm_keypoints(joints, ends)
-            )
+            right_arm_points_full.extend(collect_right_arm_keypoints(joints, ends))
 
         if visible_full:
             pts = np.vstack(visible_full)
@@ -511,16 +513,20 @@ def visualize_four_poses(
 
         # 평균 손끝 위치에 구 그리기 (오른쪽 뷰에만) + 구 지름(3cm) 텍스트
         if sphere_center is not None:
-            draw_hand_sphere(ax_focus, sphere_center, radius=HAND_SPHERE_RADIUS, color="k")
+            draw_hand_sphere(
+                ax_focus, sphere_center, radius=HAND_SPHERE_RADIUS, color="k"
+            )
 
             # 구 지름(2 * radius) = 3cm 텍스트 표시
             diameter = HAND_SPHERE_RADIUS * 2.0  # 1.5cm * 2 = 3cm
             # 구 중심에서 약간 옆/위로 치우친 위치에 텍스트 표시
-            offset = np.array([
-                HAND_SPHERE_RADIUS * 1.3,
-                0.0,
-                HAND_SPHERE_RADIUS * 1.3,
-            ])
+            offset = np.array(
+                [
+                    HAND_SPHERE_RADIUS * 1.3,
+                    0.0,
+                    HAND_SPHERE_RADIUS * 1.3,
+                ]
+            )
             pos = sphere_center + offset
             ax_focus.text(
                 pos[0],
@@ -536,9 +542,10 @@ def visualize_four_poses(
         # 오른손 끝 사이 거리 텍스트 표시
         # 기준: Start(빨강) 손끝
         if center_start is not None:
-            def _draw_distance_text(p_from: np.ndarray,
-                                    p_to: Optional[np.ndarray],
-                                    color_text: str):
+
+            def _draw_distance_text(
+                p_from: np.ndarray, p_to: Optional[np.ndarray], color_text: str
+            ):
                 if p_to is None:
                     return
                 dist = float(np.linalg.norm(p_to - p_from))
@@ -547,30 +554,38 @@ def visualize_four_poses(
 
                 # --- 색깔(라인 종류)에 따라 서로 다른 offset 적용 ---
                 if color_text == "black":
-                    offset = np.array([
-                        HAND_SPHERE_RADIUS * 0.0,   # x
-                        HAND_SPHERE_RADIUS * 0.8,   # y
-                        HAND_SPHERE_RADIUS * 0.3,   # z
-                    ])
+                    offset = np.array(
+                        [
+                            HAND_SPHERE_RADIUS * 0.0,  # x
+                            HAND_SPHERE_RADIUS * 0.8,  # y
+                            HAND_SPHERE_RADIUS * 0.3,  # z
+                        ]
+                    )
                 elif color_text == "green":
-                    offset = np.array([
-                        HAND_SPHERE_RADIUS * -0.8,  # x
-                        HAND_SPHERE_RADIUS * -0.2,  # y
-                        HAND_SPHERE_RADIUS * 0.3,   # z
-                    ])
+                    offset = np.array(
+                        [
+                            HAND_SPHERE_RADIUS * -0.8,  # x
+                            HAND_SPHERE_RADIUS * -0.2,  # y
+                            HAND_SPHERE_RADIUS * 0.3,  # z
+                        ]
+                    )
                 elif color_text == "blue":
-                    offset = np.array([
-                        HAND_SPHERE_RADIUS * 0.8,   # x
-                        HAND_SPHERE_RADIUS * -0.2,  # y
-                        HAND_SPHERE_RADIUS * 0.3,   # z
-                    ])
+                    offset = np.array(
+                        [
+                            HAND_SPHERE_RADIUS * 0.8,  # x
+                            HAND_SPHERE_RADIUS * -0.2,  # y
+                            HAND_SPHERE_RADIUS * 0.3,  # z
+                        ]
+                    )
                 else:
                     # 기본값 (혹시 다른 색 들어올 때)
-                    offset = np.array([
-                        0.0,
-                        0.0,
-                        HAND_SPHERE_RADIUS * 0.3,
-                    ])
+                    offset = np.array(
+                        [
+                            0.0,
+                            0.0,
+                            HAND_SPHERE_RADIUS * 0.3,
+                        ]
+                    )
 
                 pos = mid + offset
 
