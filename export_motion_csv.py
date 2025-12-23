@@ -43,26 +43,26 @@ def parse_frames_args(argv: List[str]) -> Optional[Tuple[int, int]]:
 def Rx(deg: float) -> np.ndarray:
     r = math.radians(deg)
     c, s = math.cos(r), math.sin(r)
-    return np.array([[1, 0, 0, 0],
-                     [0, c, -s, 0],
-                     [0, s,  c, 0],
-                     [0, 0, 0, 1]], dtype=float)
+    return np.array(
+        [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], dtype=float
+    )
+
 
 def Ry(deg: float) -> np.ndarray:
     r = math.radians(deg)
     c, s = math.cos(r), math.sin(r)
-    return np.array([[ c, 0, s, 0],
-                     [ 0, 1, 0, 0],
-                     [-s, 0, c, 0],
-                     [ 0, 0, 0, 1]], dtype=float)
+    return np.array(
+        [[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]], dtype=float
+    )
+
 
 def Rz(deg: float) -> np.ndarray:
     r = math.radians(deg)
     c, s = math.cos(r), math.sin(r)
-    return np.array([[c, -s, 0, 0],
-                     [s,  c, 0, 0],
-                     [0,  0, 1, 0],
-                     [0,  0, 0, 1]], dtype=float)
+    return np.array(
+        [[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=float
+    )
+
 
 def T(tx: float, ty: float, tz: float) -> np.ndarray:
     M = np.eye(4, dtype=float)
@@ -108,7 +108,9 @@ class BVH:
         def parse_joint_block(j: Joint, idx: int) -> int:
             nonlocal channel_cursor
             if lines[idx] != "{":
-                raise ValueError(f"조인트 {j.name} 블록에서 '{{'를 기대했으나: {lines[idx]}")
+                raise ValueError(
+                    f"조인트 {j.name} 블록에서 '{{'를 기대했으나: {lines[idx]}"
+                )
             idx += 1
 
             while idx < len(lines):
@@ -123,7 +125,7 @@ class BVH:
                 elif ln.startswith("CHANNELS"):
                     parts = ln.split()
                     n = int(parts[1])
-                    j.channels = parts[2:2 + n]
+                    j.channels = parts[2 : 2 + n]
                     j.chan_start = channel_cursor
                     channel_cursor += n
                     idx += 1
@@ -199,7 +201,9 @@ class BVH:
             self.motion.append(vals)
 
     # 채널값에서 (Tpos, Rrot) 구성 (채널 순서대로 회전 적용)
-    def _local_tr(self, j: Joint, frame_vals: List[float]) -> Tuple[np.ndarray, np.ndarray]:
+    def _local_tr(
+        self, j: Joint, frame_vals: List[float]
+    ) -> Tuple[np.ndarray, np.ndarray]:
         tx = ty = tz = 0.0
         R = np.eye(4, dtype=float)
 
@@ -261,7 +265,9 @@ def export_4frames_csv(bvh_path: str, n1: int, n2: int, out_csv: str) -> None:
     bvh = BVH(text)
 
     if bvh.frames < 2:
-        raise ValueError("BVH에는 최소 2프레임 이상이 필요합니다. (기준 프레임=2번째 프레임 사용)")
+        raise ValueError(
+            "BVH에는 최소 2프레임 이상이 필요합니다. (기준 프레임=2번째 프레임 사용)"
+        )
 
     base_idx = 1
     mid1_idx = n1 - 1
@@ -270,7 +276,9 @@ def export_4frames_csv(bvh_path: str, n1: int, n2: int, out_csv: str) -> None:
 
     for idx, name in [(mid1_idx, "n1"), (mid2_idx, "n2")]:
         if idx < 0 or idx >= bvh.frames:
-            raise ValueError(f"{name}={idx+1} 가 범위를 벗어났습니다. (허용: 1 ~ {bvh.frames})")
+            raise ValueError(
+                f"{name}={idx+1} 가 범위를 벗어났습니다. (허용: 1 ~ {bvh.frames})"
+            )
 
     pick_indices = [base_idx, mid1_idx, mid2_idx, last_idx]
     channel_headers = build_channel_headers(bvh)
@@ -292,16 +300,24 @@ def export_4frames_csv(bvh_path: str, n1: int, n2: int, out_csv: str) -> None:
             if end_xyz is None:
                 end_out = ["nan", "nan", "nan"]
             else:
-                end_out = [f"{end_xyz[0]:.6f}", f"{end_xyz[1]:.6f}", f"{end_xyz[2]:.6f}"]
+                end_out = [
+                    f"{end_xyz[0]:.6f}",
+                    f"{end_xyz[1]:.6f}",
+                    f"{end_xyz[2]:.6f}",
+                ]
 
             w.writerow([frame_no] + [f"{v:.6f}" for v in vals] + end_out)
 
     # print(f"[완료] 4프레임 MOTION CSV 저장: {out_csv}")
     # print(f"  기준(frame=2), 중간1(frame={n1}), 중간2(frame={n2}), 마지막(frame={bvh.frames})")
     if bvh.joints_by_name.get("RightWrist") is None:
-        print("[주의] BVH에 'RightWrist' 조인트가 없습니다. r_end_x/y/z는 nan으로 저장됩니다.")
+        print(
+            "[주의] BVH에 'RightWrist' 조인트가 없습니다. r_end_x/y/z는 nan으로 저장됩니다."
+        )
     elif bvh.joints_by_name["RightWrist"].end_site_offset is None:
-        print("[주의] RightWrist의 End Site OFFSET이 없습니다. r_end_x/y/z는 nan으로 저장됩니다.")
+        print(
+            "[주의] RightWrist의 End Site OFFSET이 없습니다. r_end_x/y/z는 nan으로 저장됩니다."
+        )
 
 
 if __name__ == "__main__":

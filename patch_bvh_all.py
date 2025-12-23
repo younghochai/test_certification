@@ -10,14 +10,17 @@ import numpy as np
 # 간단한 BVH 파서 (계층 + 채널 인덱스만 필요)
 # --------------------------
 
+
 class Joint:
     def __init__(self, name: str, parent: Optional["Joint"]):
         self.name = name
         self.parent = parent
         self.children: List["Joint"] = []
         self.offset = (0.0, 0.0, 0.0)
-        self.channels: List[str] = []   # 예: ["Xposition","Yposition","Zposition","Yrotation","Xrotation","Zrotation"]
-        self.chan_start: int = -1       # 모션 배열에서 이 조인트의 첫 채널 인덱스
+        self.channels: List[str] = (
+            []
+        )  # 예: ["Xposition","Yposition","Zposition","Yrotation","Xrotation","Zrotation"]
+        self.chan_start: int = -1  # 모션 배열에서 이 조인트의 첫 채널 인덱스
 
     def __repr__(self) -> str:
         return f"Joint({self.name}, ch={len(self.channels)}, start={self.chan_start})"
@@ -30,7 +33,7 @@ class BVH:
         self.joints_by_name: Dict[str, Joint] = {}
         self.frames: int = 0
         self.frame_time: float = 0.0
-        self.motion: List[List[float]] = []   # List[프레임][채널값]
+        self.motion: List[List[float]] = []  # List[프레임][채널값]
         self.total_channels: int = 0
         self._parse()
 
@@ -47,7 +50,9 @@ class BVH:
         def parse_joint_block(joint: Joint, idx: int) -> int:
             nonlocal channel_cursor
             if lines[idx] != "{":
-                raise ValueError(f"조인트 {joint.name} 블록에서 '{{'를 기대했으나: {lines[idx]}")
+                raise ValueError(
+                    f"조인트 {joint.name} 블록에서 '{{'를 기대했으나: {lines[idx]}"
+                )
             idx += 1
             while idx < len(lines):
                 ln = lines[idx]
@@ -60,7 +65,7 @@ class BVH:
                 elif ln.startswith("CHANNELS"):
                     parts = ln.split()
                     n = int(parts[1])
-                    joint.channels = parts[2:2 + n]
+                    joint.channels = parts[2 : 2 + n]
                     joint.chan_start = channel_cursor
                     channel_cursor += n
                     idx += 1
@@ -176,7 +181,9 @@ def apply_angle_patch_multi(
 
     for frame_idx in unique_targets:
         if frame_idx < 0 or frame_idx >= bvh.frames:
-            raise ValueError(f"frame_idx={frame_idx} 가 유효 범위를 벗어났습니다. (0~{bvh.frames-1})")
+            raise ValueError(
+                f"frame_idx={frame_idx} 가 유효 범위를 벗어났습니다. (0~{bvh.frames-1})"
+            )
 
         # 현재 프레임 값 복사 후 수정
         frame_vals = bvh.motion[frame_idx][:]
@@ -210,6 +217,7 @@ def apply_angle_patch_multi(
 # 2) pelvis position drift (position_vector_XX.csv) 적용
 # --------------------------
 
+
 def load_pelvis_drift_vector(csv_path: str) -> np.ndarray:
     """
     position_vector_XX.csv 를 읽어서 (3,) 형태의 pelvis 이동 벡터를 반환한다.
@@ -227,11 +235,13 @@ def load_pelvis_drift_vector(csv_path: str) -> np.ndarray:
     if data.shape[1] < 3:
         raise ValueError(f"CSV에 최소 3개 컬럼(x,y,z)이 필요합니다: {csv_path}")
 
-    vec = data[0, :3].astype(float)   # (3,)
+    vec = data[0, :3].astype(float)  # (3,)
     return vec
 
 
-def apply_pelvis_drift_to_frame(bvh: BVH, frame_idx: int, drift_vec: np.ndarray) -> None:
+def apply_pelvis_drift_to_frame(
+    bvh: BVH, frame_idx: int, drift_vec: np.ndarray
+) -> None:
     """
     특정 프레임(frame_idx)의 pelvis(root) position 을
         = 2번째 프레임 pelvis position + drift_vec
@@ -251,7 +261,9 @@ def apply_pelvis_drift_to_frame(bvh: BVH, frame_idx: int, drift_vec: np.ndarray)
         raise ValueError("프레임이 2개 미만입니다. (2번째 프레임이 존재하지 않음)")
 
     if not (0 <= frame_idx < bvh.frames):
-        raise ValueError(f"frame_idx={frame_idx} 가 유효 범위를 벗어났습니다. (0~{bvh.frames-1})")
+        raise ValueError(
+            f"frame_idx={frame_idx} 가 유효 범위를 벗어났습니다. (0~{bvh.frames-1})"
+        )
 
     root = bvh.root
     if root.chan_start < 0 or not root.channels:
@@ -302,6 +314,7 @@ def apply_pelvis_drift_last_frame(bvh: BVH, drift_vec: np.ndarray) -> None:
 # BVH 다시 쓰기
 # --------------------------
 
+
 def write_bvh_with_new_motion(original_text: str, bvh: BVH, out_path: str) -> None:
     """
     원본 텍스트에서 HIERARCHY 부분은 그대로 쓰고,
@@ -340,6 +353,7 @@ def write_bvh_with_new_motion(original_text: str, bvh: BVH, out_path: str) -> No
 # main
 # --------------------------
 
+
 def parse_frames_arg(arg_values: List[str]) -> Tuple[int, int]:
     """
     --frames n1 n2 파싱용.
@@ -361,15 +375,17 @@ def parse_frames_arg(arg_values: List[str]) -> Tuple[int, int]:
 def main() -> None:
     if len(sys.argv) < 2:
         print("사용법:")
-        print("  python patch_bvh_all.py input.bvh "
-              "[--pelvis_only] "
-              "[--pelvis_csv_01 position_vector_01.csv] "
-              "[--pelvis_csv_02 position_vector_02.csv] "
-              "[--pelvis_csv_03 position_vector_03.csv] "
-              "[--frames n1 n2] "
-              "[--std1 0.05] "
-              "[--std2 0.01] "
-              "--RightShoulder --RightElbow ...")
+        print(
+            "  python patch_bvh_all.py input.bvh "
+            "[--pelvis_only] "
+            "[--pelvis_csv_01 position_vector_01.csv] "
+            "[--pelvis_csv_02 position_vector_02.csv] "
+            "[--pelvis_csv_03 position_vector_03.csv] "
+            "[--frames n1 n2] "
+            "[--std1 0.05] "
+            "[--std2 0.01] "
+            "--RightShoulder --RightElbow ..."
+        )
         sys.exit(1)
 
     bvh_path = sys.argv[1]
@@ -381,10 +397,12 @@ def main() -> None:
     pelvis_csv_02: Optional[str] = None
     pelvis_csv_03: Optional[str] = None
     joint_names: List[str] = []
-    std1: Optional[float] = None   # Bonename 지정 조인트용 노이즈
-    std2: Optional[float] = None   # 나머지 모든 조인트용 노이즈
+    std1: Optional[float] = None  # Bonename 지정 조인트용 노이즈
+    std2: Optional[float] = None  # 나머지 모든 조인트용 노이즈
     frames_pair: Optional[Tuple[int, int]] = None
-    pelvis_only: bool = False      # True면 회전값을 덮어쓰지 않고 pelvis position drift만 적용
+    pelvis_only: bool = (
+        False  # True면 회전값을 덮어쓰지 않고 pelvis position drift만 적용
+    )
 
     # '--조인트이름', '--pelvis_csv_XX 경로', '--frames n1 n2', '--std1/2 값' 형식의 인자를 모두 모음
     i = 2
@@ -443,7 +461,7 @@ def main() -> None:
         # --- frames: n1 n2 ---
         elif arg == "--frames":
             try:
-                n1, n2 = parse_frames_arg(sys.argv[i + 1:i + 3])
+                n1, n2 = parse_frames_arg(sys.argv[i + 1 : i + 3])
             except Exception as e:
                 print(f"[에러] {e}")
                 sys.exit(1)
@@ -541,7 +559,9 @@ def main() -> None:
     print(f"[정보] pelvis CSV 01: {pelvis_csv_01 if pelvis_csv_01 else '(사용 안 함)'}")
     print(f"[정보] pelvis CSV 02: {pelvis_csv_02 if pelvis_csv_02 else '(사용 안 함)'}")
     print(f"[정보] pelvis CSV 03: {pelvis_csv_03 if pelvis_csv_03 else '(사용 안 함)'}")
-    print(f"[정보] frames (중간 프레임): {frames_pair if frames_pair else '(지정 안 함)'}")
+    print(
+        f"[정보] frames (중간 프레임): {frames_pair if frames_pair else '(지정 안 함)'}"
+    )
     # print(f"[정보] std1 (특정 조인트 노이즈): {std1 if std1 is not None else '(사용 안 함)'}")
     # print(f"[정보] std2 (나머지 조인트 노이즈): {std2 if std2 is not None else '(사용 안 함)'}")
 
@@ -560,12 +580,14 @@ def main() -> None:
 
         if frames_pair is not None:
             n1, n2 = frames_pair
-            idx1 = n1 - 1   # 1-based -> 0-based
+            idx1 = n1 - 1  # 1-based -> 0-based
             idx2 = n2 - 1
 
             if not (0 <= idx1 < bvh.frames) or not (0 <= idx2 < bvh.frames):
-                print(f"[에러] --frames 에 지정한 프레임 번호가 범위를 벗어났습니다. "
-                      f"(총 프레임: {bvh.frames}, 지정: {n1}, {n2})")
+                print(
+                    f"[에러] --frames 에 지정한 프레임 번호가 범위를 벗어났습니다. "
+                    f"(총 프레임: {bvh.frames}, 지정: {n1}, {n2})"
+                )
                 sys.exit(1)
 
             target_indices.extend([idx1, idx2])
@@ -592,13 +614,17 @@ def main() -> None:
             print(f"[정보] 프레임 {n1} (index {idx1}) 에 drift_01 적용")
             apply_pelvis_drift_to_frame(bvh, idx1, drift_01)
         else:
-            print("[주의] drift_01 (pelvis_csv_01) 이 없어 프레임 n1 에는 pelvis 패치를 하지 않습니다.")
+            print(
+                "[주의] drift_01 (pelvis_csv_01) 이 없어 프레임 n1 에는 pelvis 패치를 하지 않습니다."
+            )
 
         if drift_02 is not None:
             print(f"[정보] 프레임 {n2} (index {idx2}) 에 drift_02 적용")
             apply_pelvis_drift_to_frame(bvh, idx2, drift_02)
         else:
-            print("[주의] drift_02 (pelvis_csv_02) 이 없어 프레임 n2 에는 pelvis 패치를 하지 않습니다.")
+            print(
+                "[주의] drift_02 (pelvis_csv_02) 이 없어 프레임 n2 에는 pelvis 패치를 하지 않습니다."
+            )
     else:
         if drift_01 is not None or drift_02 is not None:
             print("[주의] --frames 가 지정되지 않아 01/02 벡터는 사용되지 않습니다.")

@@ -9,14 +9,17 @@ import numpy as np
 # 간단한 BVH 파서 (계층 + 채널 인덱스만 필요)
 # --------------------------
 
+
 class Joint:
     def __init__(self, name: str, parent: Optional["Joint"]):
         self.name = name
         self.parent = parent
         self.children: List["Joint"] = []
         self.offset = (0.0, 0.0, 0.0)
-        self.channels: List[str] = []   # 예: ["Xposition","Yposition","Zposition","Yrotation","Xrotation","Zrotation"]
-        self.chan_start: int = -1       # 모션 배열에서 이 조인트의 첫 채널 인덱스
+        self.channels: List[str] = (
+            []
+        )  # 예: ["Xposition","Yposition","Zposition","Yrotation","Xrotation","Zrotation"]
+        self.chan_start: int = -1  # 모션 배열에서 이 조인트의 첫 채널 인덱스
 
     def __repr__(self) -> str:
         return f"Joint({self.name}, ch={len(self.channels)}, start={self.chan_start})"
@@ -29,7 +32,7 @@ class BVH:
         self.joints_by_name: Dict[str, Joint] = {}
         self.frames: int = 0
         self.frame_time: float = 0.0
-        self.motion: List[List[float]] = []   # List[프레임][채널값]
+        self.motion: List[List[float]] = []  # List[프레임][채널값]
         self.total_channels: int = 0
         self._parse()
 
@@ -46,7 +49,9 @@ class BVH:
         def parse_joint_block(joint: Joint, idx: int) -> int:
             nonlocal channel_cursor
             if lines[idx] != "{":
-                raise ValueError(f"조인트 {joint.name} 블록에서 '{{'를 기대했으나: {lines[idx]}")
+                raise ValueError(
+                    f"조인트 {joint.name} 블록에서 '{{'를 기대했으나: {lines[idx]}"
+                )
             idx += 1
             while idx < len(lines):
                 ln = lines[idx]
@@ -58,7 +63,7 @@ class BVH:
                 elif ln.startswith("CHANNELS"):
                     parts = ln.split()
                     n = int(parts[1])
-                    joint.channels = parts[2:2 + n]
+                    joint.channels = parts[2 : 2 + n]
                     joint.chan_start = channel_cursor
                     channel_cursor += n
                     idx += 1
@@ -133,10 +138,9 @@ class BVH:
 # 1) 마지막 프레임 각도 덮어쓰기 로직 (+ 가우시안 노이즈)
 # --------------------------
 
+
 def apply_angle_patch(
-    bvh: BVH,
-    joint_names: List[str],
-    std: Optional[float] = None
+    bvh: BVH, joint_names: List[str], std: Optional[float] = None
 ) -> None:
     if not joint_names:
         return
@@ -144,11 +148,11 @@ def apply_angle_patch(
     if bvh.frames < 2:
         raise ValueError("프레임이 2개 미만입니다. (2번째 프레임이 존재하지 않음)")
 
-    start_idx = 1               # 두 번째 프레임 (0-based)
-    end_idx = bvh.frames - 1    # 마지막 프레임
+    start_idx = 1  # 두 번째 프레임 (0-based)
+    end_idx = bvh.frames - 1  # 마지막 프레임
 
     start_frame = bvh.motion[start_idx]
-    end_frame = bvh.motion[end_idx][:]   # 복사
+    end_frame = bvh.motion[end_idx][:]  # 복사
 
     use_noise = std is not None and std > 0.0
 
@@ -182,6 +186,7 @@ def apply_angle_patch(
 # 2) pelvis position drift (position_vector.csv) 적용
 # --------------------------
 
+
 def load_pelvis_drift_vector(csv_path: str) -> np.ndarray:
     """
     position_vector.csv 를 읽어서 (3,) 형태의 pelvis 이동 벡터를 반환한다.
@@ -198,7 +203,7 @@ def load_pelvis_drift_vector(csv_path: str) -> np.ndarray:
     if data.shape[1] < 3:
         raise ValueError(f"CSV에 최소 3개 컬럼(x,y,z)이 필요합니다: {csv_path}")
 
-    vec = data[0, :3].astype(float)   # (3,)
+    vec = data[0, :3].astype(float)  # (3,)
     return vec
 
 
@@ -229,7 +234,7 @@ def apply_pelvis_drift_last_frame(bvh: BVH, drift_vec: np.ndarray) -> None:
     # 2번째 프레임(인덱스 1)과 마지막 프레임(인덱스 frames-1)
     frame2 = bvh.motion[1]
     last_idx = bvh.frames - 1
-    last_frame = bvh.motion[last_idx][:]   # 복사해서 수정
+    last_frame = bvh.motion[last_idx][:]  # 복사해서 수정
 
     # 2번째 프레임의 pelvis position 읽기
     # 채널 이름이 Xposition/Yposition/Zposition 이라고 가정
@@ -264,6 +269,7 @@ def apply_pelvis_drift_last_frame(bvh: BVH, drift_vec: np.ndarray) -> None:
 # --------------------------
 # BVH 다시 쓰기
 # --------------------------
+
 
 def write_bvh_with_new_motion(original_text: str, bvh: BVH, out_path: str) -> None:
     """
@@ -303,13 +309,16 @@ def write_bvh_with_new_motion(original_text: str, bvh: BVH, out_path: str) -> No
 # main
 # --------------------------
 
+
 def main() -> None:
     if len(sys.argv) < 2:
         print("사용법:")
-        print("  python patch_bvh.py input.bvh "
-              "[--pelvis_csv position_vector.csv] "
-              "[--std 0.05] "
-              "--RightShoulder --RightElbow ...")
+        print(
+            "  python patch_bvh.py input.bvh "
+            "[--pelvis_csv position_vector.csv] "
+            "[--std 0.05] "
+            "--RightShoulder --RightElbow ..."
+        )
         sys.exit(1)
 
     bvh_path = sys.argv[1]
@@ -373,8 +382,12 @@ def main() -> None:
     bvh = BVH(text)
 
     print(f"[정보] 프레임 수: {bvh.frames}, 채널 수: {bvh.total_channels}")
-    print(f"[정보] 패치 대상 조인트: {', '.join(joint_names) if joint_names else '(없음)'}")
-    print(f"[정보] pelvis drift CSV: {pelvis_csv_path if pelvis_csv_path is not None else '(사용 안 함)'}")
+    print(
+        f"[정보] 패치 대상 조인트: {', '.join(joint_names) if joint_names else '(없음)'}"
+    )
+    print(
+        f"[정보] pelvis drift CSV: {pelvis_csv_path if pelvis_csv_path is not None else '(사용 안 함)'}"
+    )
 
     # 1) 각도 패치 (+ 노이즈)
     apply_angle_patch(bvh, joint_names, std=std)

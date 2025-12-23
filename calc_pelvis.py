@@ -2,9 +2,9 @@ import open3d as o3d
 import numpy as np
 
 
-def estimate_pelvis_center(human_cloud: o3d.geometry.PointCloud,
-                           pelvis_ratio: float,
-                           band: float):
+def estimate_pelvis_center(
+    human_cloud: o3d.geometry.PointCloud, pelvis_ratio: float, band: float
+):
     """
     human_cloud : 사람만 남긴 pcd (background 제거 완료된 상태)
     pelvis_ratio : 발바닥에서 pelvis까지 비율 (0~1). 기본 0.55
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     center, slice_cloud = estimate_pelvis_center(
         human_cloud, pelvis_ratio=0.55, band=0.1
-        )  # pelvis: 94/171cm
+    )  # pelvis: 94/171cm
     print("pelvis center:", center)
 
     pelvis_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.03)
@@ -71,6 +71,4 @@ if __name__ == "__main__":
 
     human_cloud.paint_uniform_color([0.7, 0.7, 0.7])
 
-    o3d.visualization.draw_geometries(
-        [human_cloud, slice_cloud, pelvis_sphere]
-    )
+    o3d.visualization.draw_geometries([human_cloud, slice_cloud, pelvis_sphere])

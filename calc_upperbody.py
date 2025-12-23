@@ -4,9 +4,9 @@ import open3d as o3d
 import numpy as np
 
 
-def estimate_pelvis_center(human_cloud: o3d.geometry.PointCloud,
-                           pelvis_ratio: float,
-                           band: float):
+def estimate_pelvis_center(
+    human_cloud: o3d.geometry.PointCloud, pelvis_ratio: float, band: float
+):
     """
     human_cloud : 사람만 남긴 pcd (background 제거 완료된 상태)
     pelvis_ratio : 발바닥에서 pelvis까지 비율 (0~1). 기본 0.55
@@ -85,11 +85,7 @@ def estimate_shoulders_simple(
     # print("estimated shoulder_z:", shoulder_z)
 
     # 2) 어깨 중심 (x, y는 pelvis랑 동일하게 가정, z만 어깨 높이로)
-    shoulder_center = np.array([
-        pelvis_center[0],
-        pelvis_center[2],
-        shoulder_z
-    ])
+    shoulder_center = np.array([pelvis_center[0], pelvis_center[2], shoulder_z])
 
     # 3) 어깨 폭 (키의 일정 비율)
     shoulder_width = shoulder_width_ratio * height
@@ -145,7 +141,7 @@ if __name__ == "__main__":
         fmt="%.3f",
         delimiter=",",
         header="x_cm,y_cm,z_cm",
-        comments=""
+        comments="",
     )
 
     print(f"pelvis CSV로 저장됨: {save_path}")

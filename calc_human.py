@@ -4,10 +4,7 @@ import argparse
 
 
 def crop_roi(cloud, min_bound, max_bound):
-    aabb = o3d.geometry.AxisAlignedBoundingBox(
-        min_bound=min_bound,
-        max_bound=max_bound
-    )
+    aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound=min_bound, max_bound=max_bound)
     return cloud.crop(aabb)
 
 
@@ -47,37 +44,24 @@ def pose_detection_open3d(cloud_A, cloud_B, dist_thresh=0.1):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--bg_pcd_path",
-        type=str,
-        default="./data/pcd_out_1.pcd",
-        help="배경"
+        "--bg_pcd_path", type=str, default="./data/pcd_out_1.pcd", help="배경"
     )
     parser.add_argument(
-        "--human_pcd_path",
-        type=str,
-        default="./data/pcd_out_110.pcd",
-        help="배경+사람"
+        "--human_pcd_path", type=str, default="./data/pcd_out_110.pcd", help="배경+사람"
     )
     parser.add_argument(
-        "--out_pcd_path",
-        type=str,
-        default="./data/human_only.pcd",
-        help="결과"
+        "--out_pcd_path", type=str, default="./data/human_only.pcd", help="결과"
     )
-    parser.add_argument(
-        "--dist_thresh",
-        type=float,
-        default=0.15
-    )
+    parser.add_argument("--dist_thresh", type=float, default=0.15)
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    bg_pcd_path = args.bg_pcd_path          # cloud_A: 배경만 있는 pcd
-    human_pcd_path = args.human_pcd_path    # cloud_B: 배경 + 사람 pcd
-    out_pcd_path = args.out_pcd_path        # 결과 파일
+    bg_pcd_path = args.bg_pcd_path  # cloud_A: 배경만 있는 pcd
+    human_pcd_path = args.human_pcd_path  # cloud_B: 배경 + 사람 pcd
+    out_pcd_path = args.out_pcd_path  # 결과 파일
 
     # pcd 읽기
     cloud_A = o3d.io.read_point_cloud(bg_pcd_path)
@@ -93,7 +77,7 @@ if __name__ == "__main__":
 
     # 라이다 - 인간 거리 반영 x앞뒤 y위아래 z좌우
     min_bound = np.array([0.0, -1100.0, -500.0])
-    max_bound = np.array([3000.0,  500.0,  500.0])
+    max_bound = np.array([3000.0, 500.0, 500.0])
 
     cloud_out = crop_roi(cloud_out, min_bound, max_bound)
 
