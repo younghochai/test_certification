@@ -19,16 +19,16 @@ def estimate_pelvis_center(human_cloud: o3d.geometry.PointCloud,
     # 1) z축 기준 키 추정
     y_min = pts[:, 1].min()
     y_max = pts[:, 1].max()
-    print(y_max, y_min)
+    # print(y_max, y_min)
     height = y_max - y_min
-    print("height:", height)
+    # print("height:", height)
 
     if height <= 0:
         raise ValueError("height 비정상")
 
     # 2) pelvis 예상 높이
     pelvis_y = y_min + pelvis_ratio * height
-    print("estimated pelvis_z:", pelvis_y)
+    # print("estimated pelvis_z:", pelvis_y)
 
     # 3) pelvis 주변 band 슬라이스 선택
     half_band = band / 2.0
@@ -82,7 +82,7 @@ def estimate_shoulders_simple(
 
     # 1) 어깨 높이
     shoulder_z = z_min + shoulder_ratio * height
-    print("estimated shoulder_z:", shoulder_z)
+    # print("estimated shoulder_z:", shoulder_z)
 
     # 2) 어깨 중심 (x, y는 pelvis랑 동일하게 가정, z만 어깨 높이로)
     shoulder_center = np.array([
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     human_cloud = o3d.io.read_point_cloud(human_pcd_path)
 
     center, slice_cloud = estimate_pelvis_center(
-        human_cloud, pelvis_ratio=0.55, band=100
+        human_cloud, pelvis_ratio=0.55, band=60
     )  # pelvis: 94/171cm
 
     # 저장
@@ -158,12 +158,12 @@ if __name__ == "__main__":
     # 라인 지정
     human_cloud.paint_uniform_color([0.7, 0.7, 0.7])
 
-    # o3d.visualization.draw_geometries(
-    #     [
-    #         human_cloud,
-    #         slice_cloud,
-    #         pelvis_sphere,
-    #         # L_sphere,
-    #         # R_sphere,
-    #     ]
-    # )
+    o3d.visualization.draw_geometries(
+        [
+            human_cloud,
+            # slice_cloud,
+            pelvis_sphere,
+            # L_sphere,
+            # R_sphere,
+        ]
+    )

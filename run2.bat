@@ -13,13 +13,11 @@ python convert_coordinate.py --src1 ./data/result/pelvis-test_result1.csv --src2
 python convert_coordinate.py --src1 ./data/result/pelvis-test_result1.csv --src2 ./data/result/pelvis-test_result3.csv --out ./data/result/position_vector_02.csv
 python convert_coordinate.py --src1 ./data/result/pelvis-test_result1.csv --src2 ./data/result/pelvis-test_result4.csv --out ./data/result/position_vector_03.csv
 
-python patch_bvh_all.py ./data/BVH/input.bvh --frames 4600 7700 --pelvis_csv_01 ./data/result/position_vector_01.csv --pelvis_csv_02 ./data/result/position_vector_02.csv --pelvis_csv_03 ./data/result/position_vector_03.csv --std1 0.05 --std2 0.15 --Hips --Chest --RightCollar --RightShoulder --RightElbow --RightWrist
+python patch_bvh_all.py ./data/BVH/input.bvh --frames 1500 3000 --pelvis_csv_01 ./data/result/position_vector_01.csv --pelvis_csv_02 ./data/result/position_vector_02.csv --pelvis_csv_03 ./data/result/position_vector_03.csv --pelvis_only
 
 python endSite.py ./data/BVH/input_patched.bvh
-python L2distance_with_csv.py ./data/BVH/input.bvh --frames 4600 7700
-python L2distance_with_csv.py ./data/BVH/input_patched.bvh --frames 4600 7700
-python export_motion_csv.py ./data/BVH/input.bvh --frames 4600 7700 --out ./data/result.csv
-python export_motion_csv.py ./data/BVH/input_patched.bvh --frames 4600 7700 --out ./data/result_patched.csv
-python visualization.py --midsphere --frames 4600 7700 --input_bvh ./data/BVH/input.bvh --patched_bvh ./data/BVH/input.bvh
-python visualization.py --midsphere --frames 4600 7700 --input_bvh ./data/BVH/input.bvh --patched_bvh ./data/BVH/input_patched.bvh
+python L2distance_with_csv.py ./data/BVH/input.bvh --frames 1500 3000
+python L2distance_with_csv.py ./data/BVH/input_patched.bvh --frames 1500 3000
+python visualization.py --midsphere --frames 1500 3000 --input_bvh ./data/BVH/input.bvh --patched_bvh ./data/BVH/input.bvh
+python visualization.py --midsphere --frames 1500 3000 --input_bvh ./data/BVH/input.bvh --patched_bvh ./data/BVH/input_patched.bvh
 pause

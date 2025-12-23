@@ -87,7 +87,7 @@ def main():
     )
 
     print(f"저장 완료: {args.out}")
-    print("첫 번째 벡터 (wanted 좌표계, cm):", diff_w[0])
+    print("position 벡터 (wanted 좌표계, cm):", diff_w[0])
 
 
 if __name__ == "__main__":

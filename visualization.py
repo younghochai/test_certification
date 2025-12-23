@@ -10,6 +10,13 @@ from endSite import BVH  # 프로젝트의 BVH 파서 사용
 # 오른손 근처 시각화에 사용할 반지름 (cm)
 HAND_SPHERE_RADIUS = 1.5
 
+plt.rcParams.update({
+    "font.size": 14,        # 기본 폰트 크기
+    "axes.labelsize": 16,   # X, Y, Z 라벨
+    "axes.titlesize": 18,   # 타이틀
+    "legend.fontsize": 14,  # 범례 글자
+})
+
 
 def load_bvh(path: str) -> BVH:
     """BVH 파일을 읽어서 BVH 객체로 반환."""
@@ -90,15 +97,15 @@ def set_axes_equal(ax):
 
 def is_right_arm_chain(name: str) -> bool:
     """
-    'RightElbow', 'RightWrist', 'RightHand' 등 오른팔/손 체인인지 판별.
-    (손끝/손목/elbow는 항상 보여주기 위함)
+    오른팔/손 체인인지 판별.
+    (손끝/손목 항상 보여주기 위함)
     """
     lower = name.lower()
     # 대표적인 이름들
-    if "right" in lower and ("elbow" in lower or "wrist" in lower or "hand" in lower):
+    if "right" in lower and ("wrist" in lower or "hand" in lower):
         return True
     # 약어 형태 r_elbow, r_hand 등도 대비
-    if lower.startswith("r_") and ("elbow" in lower or "wrist" in lower or "hand" in lower):
+    if lower.startswith("r_") and ("wrist" in lower or "hand" in lower):
         return True
     return False
 
@@ -231,6 +238,57 @@ def draw_hand_sphere(
     ax.plot_surface(xs, ys, zs, color=color, alpha=0.25, linewidth=0.2)
 
 
+# ---------------------- 새로 추가된 헬퍼 함수들 ---------------------- #
+def collect_right_arm_keypoints(
+    joint_positions: Dict[str, np.ndarray],
+    end_positions: Dict[str, np.ndarray],
+) -> List[np.ndarray]:
+    """
+    오른손끝(End Site), 오른손목, 오른팔꿈치에 해당하는 점들을 모은다.
+    - 이름은 heuristic 으로 판별 (RightHand / RightWrist / RightElbow 등)
+    """
+    pts: List[np.ndarray] = []
+
+    # 1) 손끝(End Site)
+    hand_center = get_right_hand_center(end_positions)
+    if hand_center is not None:
+        pts.append(hand_center)
+
+    # 2) 손목/팔꿈치 조인트
+    for name, p in joint_positions.items():
+        lower = name.lower()
+        if "right" not in lower:
+            continue
+        if ("wrist" in lower) or ("hand" in lower):
+            pts.append(p)
+
+    return pts
+
+
+def draw_2d_circle_on_3d(
+    ax,
+    center_xy: np.ndarray,
+    radius: float,
+    z_level: float,
+    color: str = "magenta",
+    linewidth: float = 2.5,
+    linestyle: str = "-",
+):
+    """
+    3D Axes 위에 XY 평면 상의 원을 하나 그린다.
+    - 카메라를 (elev=90, azim=...) 로 두면 화면에서는 '동그라미'로 보인다.
+    """
+    theta = np.linspace(0.0, 2.0 * np.pi, 200)
+    xs = center_xy[0] + radius * np.cos(theta)
+    ys = center_xy[1] + radius * np.sin(theta)
+    zs = np.full_like(xs, z_level)
+
+    ax.plot(xs, ys, zs, color=color, linewidth=linewidth, linestyle=linestyle)
+
+
+# ------------------------------------------------------------------- #
+
+
 def visualize_four_poses(
     input_bvh_path: str,
     patched_bvh_path: str,
@@ -250,7 +308,7 @@ def visualize_four_poses(
     ※ end raw (input.bvh의 마지막 프레임)는 시각화하지 않음.
 
     use_midsphere=True 인 경우:
-      - 왼쪽: 전신 스켈레톤 (4개)만 표시 (구 X)
+      - 왼쪽: 전신 스켈레톤 (4개)만 표시 + 오른손끝/손목/팔꿈치 영역을 하나의 동그라미로 강조
       - 오른쪽: 손끝/손목/elbow 중심 확대 시각화 +
         빨/노/초/파 4개 오른손 끝의 산술 평균 위치에 반지름 1.5cm 구 표시
     """
@@ -291,7 +349,7 @@ def visualize_four_poses(
 
     pose_infos = [
         ("Start", "red",    j_start, e_start, bones_start, center_start),
-        ("Return 1", "orange", j_mid1,  e_mid1,  bones_mid1,  center_mid1),
+        ("Return 1", "black", j_mid1,  e_mid1,  bones_mid1,  center_mid1),
         ("Return 2", "green",  j_mid2,  e_mid2,  bones_mid2,  center_mid2),
         ("Return 3", "blue",   j_last,  e_last,  bones_last,  center_last),
     ]
@@ -309,6 +367,7 @@ def visualize_four_poses(
         ax = fig.add_subplot(111, projection="3d")
 
         all_points: List[np.ndarray] = []
+        right_arm_points_all: List[np.ndarray] = []
 
         for label, color, joints, ends, bones, _center in pose_infos:
             plot_skeleton(
@@ -321,6 +380,10 @@ def visualize_four_poses(
                 focus_center=None,
                 use_handsphere=False,
                 visible_points_acc=all_points,
+            )
+            # 오른팔 주요 포인트 수집 (손끝/손목/elbow)
+            right_arm_points_all.extend(
+                collect_right_arm_keypoints(joints, ends)
             )
 
         # 축 범위 설정
@@ -335,6 +398,24 @@ def visualize_four_poses(
             ax.set_ylim(min_xyz[1] - margin, max_xyz[1] + margin)
             ax.set_zlim(min_xyz[2] - margin, max_xyz[2] + margin)
             set_axes_equal(ax)
+
+        # ----- 오른손끝/손목/팔꿈치 영역 동그라미로 강조 (전체 뷰에서도 표시) -----
+        if right_arm_points_all:
+            pts_ra = np.vstack(right_arm_points_all)
+            # XY 평면 상의 중심 및 반지름 계산
+            center_xy = pts_ra[:, :2].mean(axis=0)
+            dists = np.linalg.norm(pts_ra[:, :2] - center_xy[None, :], axis=1)
+            radius = float(dists.max()) * 1.1  # 약간 margin
+            z_level = float(pts_ra[:, 2].mean())
+            draw_2d_circle_on_3d(
+                ax,
+                center_xy=center_xy,
+                radius=radius,
+                z_level=z_level,
+                color="magenta",
+                linewidth=2.5,
+                linestyle="-",
+            )
 
         # 축 라벨 및 타이틀
         ax.set_xlabel("X")
@@ -357,6 +438,8 @@ def visualize_four_poses(
 
         # ----- 왼쪽: 전신 스켈레톤 4개 (구 없음) -----
         visible_full: List[np.ndarray] = []
+        right_arm_points_full: List[np.ndarray] = []
+
         for label, color, joints, ends, bones, _center in pose_infos:
             plot_skeleton(
                 ax_full,
@@ -368,6 +451,10 @@ def visualize_four_poses(
                 focus_center=None,
                 use_handsphere=False,
                 visible_points_acc=visible_full,
+            )
+            # 오른팔 주요 포인트(손끝/손목/elbow) 수집
+            right_arm_points_full.extend(
+                collect_right_arm_keypoints(joints, ends)
             )
 
         if visible_full:
@@ -381,6 +468,24 @@ def visualize_four_poses(
             ax_full.set_ylim(min_xyz[1] - margin, max_xyz[1] + margin)
             ax_full.set_zlim(min_xyz[2] - margin, max_xyz[2] + margin)
             set_axes_equal(ax_full)
+
+        # ----- 왼쪽: 오른손끝/손목/팔꿈치 영역 동그라미로 강조 -----
+        if right_arm_points_full:
+            pts_ra = np.vstack(right_arm_points_full)
+            # XY 평면 상 중심/반지름 계산
+            center_xy = pts_ra[:, :2].mean(axis=0)
+            dists = np.linalg.norm(pts_ra[:, :2] - center_xy[None, :], axis=1)
+            radius = float(dists.max()) * 1.1  # 약간 margin
+            z_level = float(pts_ra[:, 2].mean())
+            draw_2d_circle_on_3d(
+                ax_full,
+                center_xy=center_xy,
+                radius=radius,
+                z_level=z_level,
+                color="magenta",
+                linewidth=2.5,
+                linestyle="-",
+            )
 
         ax_full.set_xlabel("X")
         ax_full.set_ylabel("Y")
@@ -423,7 +528,7 @@ def visualize_four_poses(
                 pos[2],
                 f"{diameter:.1f} cm",
                 color="red",
-                fontsize=12,
+                fontsize=16,
                 ha="center",
                 va="center",
             )
@@ -436,25 +541,52 @@ def visualize_four_poses(
                                     color_text: str):
                 if p_to is None:
                     return
-                # 두 점 사이 유클리드 거리
                 dist = float(np.linalg.norm(p_to - p_from))
-                # 중간 지점 + 약간 위로 올려서 텍스트 배치 (겹침 방지)
                 mid = (p_from + p_to) / 2.0
                 mid = mid.copy()
-                mid[2] += HAND_SPHERE_RADIUS * 0.3
+
+                # --- 색깔(라인 종류)에 따라 서로 다른 offset 적용 ---
+                if color_text == "black":
+                    offset = np.array([
+                        HAND_SPHERE_RADIUS * 0.0,   # x
+                        HAND_SPHERE_RADIUS * 0.8,   # y
+                        HAND_SPHERE_RADIUS * 0.3,   # z
+                    ])
+                elif color_text == "green":
+                    offset = np.array([
+                        HAND_SPHERE_RADIUS * -0.8,  # x
+                        HAND_SPHERE_RADIUS * -0.2,  # y
+                        HAND_SPHERE_RADIUS * 0.3,   # z
+                    ])
+                elif color_text == "blue":
+                    offset = np.array([
+                        HAND_SPHERE_RADIUS * 0.8,   # x
+                        HAND_SPHERE_RADIUS * -0.2,  # y
+                        HAND_SPHERE_RADIUS * 0.3,   # z
+                    ])
+                else:
+                    # 기본값 (혹시 다른 색 들어올 때)
+                    offset = np.array([
+                        0.0,
+                        0.0,
+                        HAND_SPHERE_RADIUS * 0.3,
+                    ])
+
+                pos = mid + offset
+
                 ax_focus.text(
-                    mid[0],
-                    mid[1],
-                    mid[2],
+                    pos[0],
+                    pos[1],
+                    pos[2],
                     f"{dist:.2f} cm",
                     color=color_text,
-                    fontsize=14,
+                    fontsize=16,
                     ha="center",
                     va="bottom",
                 )
 
             # 빨간 손끝 ~ 노랑 손끝 = 노랑 글씨
-            _draw_distance_text(center_start, center_mid1, "orange")
+            _draw_distance_text(center_start, center_mid1, "black")
 
             # 빨간 손끝 ~ 초록 손끝 = 초록 글씨
             _draw_distance_text(center_start, center_mid2, "green")

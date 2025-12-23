@@ -384,9 +384,6 @@ def compare_r_hand(csv_path: str, frames=None):
     l2_last = np.linalg.norm(diff_last)
 
     print("=== r_hand 위치 비교 ===")
-    print(f"[기준 프레임] 3행(데이터 index {start_idx}) r_hand (x, y, z): {start_r_hand}")
-    print(f"[마지막 프레임] 행 index {last_idx} r_hand (x, y, z): {end_r_hand}")
-    print(f"기준 ~ 마지막 프레임 L2 거리: {l2_last:.6f} cm")
 
     # --frames n1 n2 가 지정된 경우: 중간 프레임 2개에 대해서도 L2 거리 계산
     if frames is not None:
@@ -418,11 +415,15 @@ def compare_r_hand(csv_path: str, frames=None):
         l2_2 = np.linalg.norm(diff_2)
 
         print("\n--- 중간 프레임 L2 거리 ---")
-        print(f"[n1 프레임] BVH 프레임 {n1} (CSV index {idx1}) r_hand (x, y, z): {mid1_r_hand}")
-        print(f"기준(3행) ~ n1({n1}) 프레임 L2 거리: {l2_1:.6f} cm")
+        # print(f"[n1 프레임] BVH 프레임 {n1} (CSV index {idx1}) r_hand (x, y, z): {mid1_r_hand}")
+        print(f"\n시작 ~ n1({n1}) 프레임 L2 거리: {l2_1:.6f} cm")
 
-        print(f"\n[n2 프레임] BVH 프레임 {n2} (CSV index {idx2}) r_hand (x, y, z): {mid2_r_hand}")
-        print(f"기준(3행) ~ n2({n2}) 프레임 L2 거리: {l2_2:.6f} cm")
+        # print(f"\n[n2 프레임] BVH 프레임 {n2} (CSV index {idx2}) r_hand (x, y, z): {mid2_r_hand}")
+        print(f"\n시작 ~ n2({n2}) 프레임 L2 거리: {l2_2:.6f} cm")
+
+    # print(f"\n[기준 프레임] 3행(데이터 index {start_idx}) r_hand (x, y, z): {start_r_hand}")
+    # print(f"[마지막 프레임] 행 index {last_idx} r_hand (x, y, z): {end_r_hand}")
+    print(f"\n시작 ~ 마지막 프레임 L2 거리: {l2_last:.6f} cm")
 
     # 기존처럼 마지막 프레임 기준 L2 거리 하나를 리턴 (호환성 유지)
     return l2_last

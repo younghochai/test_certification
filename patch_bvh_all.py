@@ -1,3 +1,4 @@
+# patch_bvh_all.py
 import sys
 import os
 from typing import List, Dict, Optional, Tuple
@@ -361,6 +362,7 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("사용법:")
         print("  python patch_bvh_all.py input.bvh "
+              "[--pelvis_only] "
               "[--pelvis_csv_01 position_vector_01.csv] "
               "[--pelvis_csv_02 position_vector_02.csv] "
               "[--pelvis_csv_03 position_vector_03.csv] "
@@ -382,14 +384,20 @@ def main() -> None:
     std1: Optional[float] = None   # Bonename 지정 조인트용 노이즈
     std2: Optional[float] = None   # 나머지 모든 조인트용 노이즈
     frames_pair: Optional[Tuple[int, int]] = None
+    pelvis_only: bool = False      # True면 회전값을 덮어쓰지 않고 pelvis position drift만 적용
 
     # '--조인트이름', '--pelvis_csv_XX 경로', '--frames n1 n2', '--std1/2 값' 형식의 인자를 모두 모음
     i = 2
     while i < len(sys.argv):
         arg = sys.argv[i]
 
+        # --- pelvis_only ---
+        if arg == "--pelvis_only":
+            pelvis_only = True
+            i += 1
+
         # --- pelvis_csv_01 ---
-        if arg.startswith("--pelvis_csv_01="):
+        elif arg.startswith("--pelvis_csv_01="):
             pelvis_csv_01 = arg.split("=", 1)[1]
             i += 1
         elif arg == "--pelvis_csv_01":
@@ -459,17 +467,17 @@ def main() -> None:
             try:
                 std1 = float(arg.split("=", 1)[1])
             except ValueError:
-                print("[에러] --std1 값이 실수 형태가 아닙니다.")
+                # print("[에러] --std1 값이 실수 형태가 아닙니다.")
                 sys.exit(1)
             i += 1
         elif arg == "--std1":
             if i + 1 >= len(sys.argv):
-                print("[에러] --std1 뒤에 값이 필요합니다.")
+                # print("[에러] --std1 뒤에 값이 필요합니다.")
                 sys.exit(1)
             try:
                 std1 = float(sys.argv[i + 1])
             except ValueError:
-                print("[에러] --std1 값이 실수 형태가 아닙니다.")
+                # print("[에러] --std1 값이 실수 형태가 아닙니다.")
                 sys.exit(1)
             i += 2
 
@@ -478,38 +486,38 @@ def main() -> None:
             try:
                 std2 = float(arg.split("=", 1)[1])
             except ValueError:
-                print("[에러] --std2 값이 실수 형태가 아닙니다.")
+                # print("[에러] --std2 값이 실수 형태가 아닙니다.")
                 sys.exit(1)
             i += 1
         elif arg == "--std2":
             if i + 1 >= len(sys.argv):
-                print("[에러] --std2 뒤에 값이 필요합니다.")
+                # print("[에러] --std2 뒤에 값이 필요합니다.")
                 sys.exit(1)
             try:
                 std2 = float(sys.argv[i + 1])
             except ValueError:
-                print("[에러] --std2 값이 실수 형태가 아닙니다.")
+                # print("[에러] --std2 값이 실수 형태가 아닙니다.")
                 sys.exit(1)
             i += 2
 
         # --- (선택) 구버전 호환: --std 를 std1 으로 처리 ---
         elif arg.startswith("--std="):
-            print("[주의] --std 는 deprecated 입니다. --std1/--std2 를 사용하세요. (여기서는 std1 으로 사용)")
+            # print("[주의] --std 는 deprecated 입니다. --std1/--std2 를 사용하세요. (여기서는 std1 으로 사용)")
             try:
                 std1 = float(arg.split("=", 1)[1])
             except ValueError:
-                print("[에러] --std 값이 실수 형태가 아닙니다.")
+                # print("[에러] --std 값이 실수 형태가 아닙니다.")
                 sys.exit(1)
             i += 1
         elif arg == "--std":
-            print("[주의] --std 는 deprecated 입니다. --std1/--std2 를 사용하세요. (여기서는 std1 으로 사용)")
+            # print("[주의] --std 는 deprecated 입니다. --std1/--std2 를 사용하세요. (여기서는 std1 으로 사용)")
             if i + 1 >= len(sys.argv):
-                print("[에러] --std 뒤에 값이 필요합니다.")
+                # print("[에러] --std 뒤에 값이 필요합니다.")
                 sys.exit(1)
             try:
                 std1 = float(sys.argv[i + 1])
             except ValueError:
-                print("[에러] --std 값이 실수 형태가 아닙니다.")
+                # print("[에러] --std 값이 실수 형태가 아닙니다.")
                 sys.exit(1)
             i += 2
 
@@ -528,39 +536,47 @@ def main() -> None:
     bvh = BVH(text)
 
     print(f"[정보] 프레임 수: {bvh.frames}, 채널 수: {bvh.total_channels}")
-    print(f"[정보] 패치 대상(특정) 조인트: {', '.join(joint_names) if joint_names else '(없음)'}")
+    # print(f"[정보] pelvis_only: {'ON (회전 패치 생략, pelvis position만 적용)' if pelvis_only else 'OFF (회전+pelvis 패치)'}")
+    # print(f"[정보] 패치 대상(특정) 조인트: {', '.join(joint_names) if joint_names else '(없음)'}")
     print(f"[정보] pelvis CSV 01: {pelvis_csv_01 if pelvis_csv_01 else '(사용 안 함)'}")
     print(f"[정보] pelvis CSV 02: {pelvis_csv_02 if pelvis_csv_02 else '(사용 안 함)'}")
     print(f"[정보] pelvis CSV 03: {pelvis_csv_03 if pelvis_csv_03 else '(사용 안 함)'}")
     print(f"[정보] frames (중간 프레임): {frames_pair if frames_pair else '(지정 안 함)'}")
-    print(f"[정보] std1 (특정 조인트 노이즈): {std1 if std1 is not None else '(사용 안 함)'}")
-    print(f"[정보] std2 (나머지 조인트 노이즈): {std2 if std2 is not None else '(사용 안 함)'}")
+    # print(f"[정보] std1 (특정 조인트 노이즈): {std1 if std1 is not None else '(사용 안 함)'}")
+    # print(f"[정보] std2 (나머지 조인트 노이즈): {std2 if std2 is not None else '(사용 안 함)'}")
+
+    # if pelvis_only:
+    #     if joint_names:
+    #         print("[주의] --pelvis_only 가 켜져 있어 조인트 이름 인자(--RightShoulder 등)는 무시됩니다.")
+    #     if std1 is not None or std2 is not None:
+    #         print("[주의] --pelvis_only 가 켜져 있어 --std1/--std2 는 무시됩니다.")
 
     # --- 1) 회전 각도 덮어쓰기 (+ 노이즈) ---
     # 대상 프레임: 중간 프레임 1, 2 (옵션), 그리고 마지막 프레임
-    target_indices: List[int] = []
-    last_idx = bvh.frames - 1
-    target_indices.append(last_idx)
+    if not pelvis_only:
+        target_indices: List[int] = []
+        last_idx = bvh.frames - 1
+        target_indices.append(last_idx)
 
-    if frames_pair is not None:
-        n1, n2 = frames_pair
-        idx1 = n1 - 1   # 1-based -> 0-based
-        idx2 = n2 - 1
+        if frames_pair is not None:
+            n1, n2 = frames_pair
+            idx1 = n1 - 1   # 1-based -> 0-based
+            idx2 = n2 - 1
 
-        if not (0 <= idx1 < bvh.frames) or not (0 <= idx2 < bvh.frames):
-            print(f"[에러] --frames 에 지정한 프레임 번호가 범위를 벗어났습니다. "
-                  f"(총 프레임: {bvh.frames}, 지정: {n1}, {n2})")
-            sys.exit(1)
+            if not (0 <= idx1 < bvh.frames) or not (0 <= idx2 < bvh.frames):
+                print(f"[에러] --frames 에 지정한 프레임 번호가 범위를 벗어났습니다. "
+                      f"(총 프레임: {bvh.frames}, 지정: {n1}, {n2})")
+                sys.exit(1)
 
-        target_indices.extend([idx1, idx2])
+            target_indices.extend([idx1, idx2])
 
-    apply_angle_patch_multi(
-        bvh=bvh,
-        special_joint_names=joint_names,
-        target_frame_indices=target_indices,
-        std1=std1,
-        std2=std2,
-    )
+        apply_angle_patch_multi(
+            bvh=bvh,
+            special_joint_names=joint_names,
+            target_frame_indices=target_indices,
+            std1=std1,
+            std2=std2,
+        )
 
     # --- 2) pelvis position drift 적용 ---
     drift_01 = load_pelvis_drift_vector(pelvis_csv_01) if pelvis_csv_01 else None
@@ -584,7 +600,7 @@ def main() -> None:
         else:
             print("[주의] drift_02 (pelvis_csv_02) 이 없어 프레임 n2 에는 pelvis 패치를 하지 않습니다.")
     else:
-        if drift_01 or drift_02:
+        if drift_01 is not None or drift_02 is not None:
             print("[주의] --frames 가 지정되지 않아 01/02 벡터는 사용되지 않습니다.")
 
     # 마지막 프레임에 drift_03 적용
@@ -597,7 +613,7 @@ def main() -> None:
 
     write_bvh_with_new_motion(text, bvh, out_path)
 
-    print(f"[완료] 패치된 BVH 저장: {out_path}")
+    # print(f"[완료] 패치된 BVH 저장: {out_path}")
 
 
 if __name__ == "__main__":
