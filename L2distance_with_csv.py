@@ -11,15 +11,12 @@ import numpy as np
 #   - 기존 endSite.py 의 핵심 로직을 축약/통합
 # =========================
 
+
 def Rx(deg):
     r = math.radians(deg)
     c, s = math.cos(r), math.sin(r)
     return np.array(
-        [[1, 0, 0, 0],
-         [0, c, -s, 0],
-         [0, s,  c, 0],
-         [0, 0, 0, 1]],
-        dtype=float
+        [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]], dtype=float
     )
 
 
@@ -27,11 +24,7 @@ def Ry(deg):
     r = math.radians(deg)
     c, s = math.cos(r), math.sin(r)
     return np.array(
-        [[ c, 0, s, 0],
-         [ 0, 1, 0, 0],
-         [-s, 0, c, 0],
-         [ 0, 0, 0, 1]],
-        dtype=float
+        [[c, 0, s, 0], [0, 1, 0, 0], [-s, 0, c, 0], [0, 0, 0, 1]], dtype=float
     )
 
 
@@ -39,11 +32,7 @@ def Rz(deg):
     r = math.radians(deg)
     c, s = math.cos(r), math.sin(r)
     return np.array(
-        [[c, -s, 0, 0],
-         [s,  c, 0, 0],
-         [0,  0, 1, 0],
-         [0,  0, 0, 1]],
-        dtype=float
+        [[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=float
     )
 
 
@@ -59,7 +48,7 @@ class Joint:
         self.parent = parent
         self.children = []
         self.offset = np.zeros(3, dtype=float)
-        self.channels = []        # ["Xposition", "Yposition", ...]
+        self.channels = []  # ["Xposition", "Yposition", ...]
         self.chan_start = -1
         self.end_site_offset = None
 
@@ -74,7 +63,7 @@ class BVH:
         self.joints_by_name = {}
         self.frames = 0
         self.frame_time = 0.0
-        self.motion = []          # List[frame][channel]
+        self.motion = []  # List[frame][channel]
         self.total_channels = 0
         self._parse()
 
@@ -99,7 +88,7 @@ class BVH:
                 elif ln.startswith("CHANNELS"):
                     parts = ln.split()
                     n = int(parts[1])
-                    j.channels = parts[2:2 + n]
+                    j.channels = parts[2 : 2 + n]
                     j.chan_start = channel_cursor
                     channel_cursor += n
                     idx += 1
@@ -294,8 +283,13 @@ def bvh_to_csv(bvh_path: str) -> str:
     right_shoulder_xyz = bvh.right_shoulder_positions()
     left_shoulder_xyz = bvh.left_shoulder_positions()
 
-    if not (pelvis_xyz.shape[0] == left_end_xyz.shape[0] == right_end_xyz.shape[0] ==
-            left_shoulder_xyz.shape[0] == right_shoulder_xyz.shape[0]):
+    if not (
+        pelvis_xyz.shape[0]
+        == left_end_xyz.shape[0]
+        == right_end_xyz.shape[0]
+        == left_shoulder_xyz.shape[0]
+        == right_shoulder_xyz.shape[0]
+    ):
         raise ValueError("Pelvis / 손 / 어깨 프레임 수가 서로 다릅니다.")
 
     merged = np.hstack(
@@ -335,6 +329,7 @@ def bvh_to_csv(bvh_path: str) -> str:
 # =========================
 # r_hand L2 distance 계산
 # =========================
+
 
 def compare_r_hand(csv_path: str, frames=None):
     """
