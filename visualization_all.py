@@ -99,7 +99,9 @@ def is_right_arm_chain(name: str) -> bool:
     if "right" in lower and ("elbow" in lower or "wrist" in lower or "hand" in lower):
         return True
     # 약어 형태 r_elbow, r_hand 등도 대비
-    if lower.startswith("r_") and ("elbow" in lower or "wrist" in lower or "hand" in lower):
+    if lower.startswith("r_") and (
+        "elbow" in lower or "wrist" in lower or "hand" in lower
+    ):
         return True
     return False
 
@@ -299,7 +301,9 @@ def visualize_all_poses(
     j_mid2_raw, e_mid2_raw, bones_mid2_raw = extract_skeleton(bvh_input, idx2)
 
     # end edited / end raw
-    j_end_edit, e_end_edit, bones_end_edit = extract_skeleton(bvh_patched, last_idx_edited)
+    j_end_edit, e_end_edit, bones_end_edit = extract_skeleton(
+        bvh_patched, last_idx_edited
+    )
     j_end_raw, e_end_raw, bones_end_raw = extract_skeleton(bvh_input, last_idx_raw)
 
     # 오른손 끝 End Site (각 포즈마다)
@@ -313,13 +317,61 @@ def visualize_all_poses(
 
     # pose_infos: (label, color, linestyle, joints, ends, bones, center)
     pose_infos = [
-        ("Start",          "red",    "-",  j_start,      e_start,      bones_start,      center_start),
-        ("Mid 1 (edited)", "yellow", "-",  j_mid1_edit,  e_mid1_edit,  bones_mid1_edit,  center_mid1_edit),
-        ("Mid 1 (raw)",    "yellow", "--", j_mid1_raw,   e_mid1_raw,   bones_mid1_raw,   center_mid1_raw),
-        ("Mid 2 (edited)", "green",  "-",  j_mid2_edit,  e_mid2_edit,  bones_mid2_edit,  center_mid2_edit),
-        ("Mid 2 (raw)",    "green",  "--", j_mid2_raw,   e_mid2_raw,   bones_mid2_raw,   center_mid2_raw),
-        ("End (edited)",   "blue",   "-",  j_end_edit,   e_end_edit,   bones_end_edit,   center_end_edit),
-        ("End (raw)",      "blue",   "--", j_end_raw,    e_end_raw,    bones_end_raw,    center_end_raw),
+        ("Start", "red", "-", j_start, e_start, bones_start, center_start),
+        (
+            "Mid 1 (edited)",
+            "yellow",
+            "-",
+            j_mid1_edit,
+            e_mid1_edit,
+            bones_mid1_edit,
+            center_mid1_edit,
+        ),
+        (
+            "Mid 1 (raw)",
+            "yellow",
+            "--",
+            j_mid1_raw,
+            e_mid1_raw,
+            bones_mid1_raw,
+            center_mid1_raw,
+        ),
+        (
+            "Mid 2 (edited)",
+            "green",
+            "-",
+            j_mid2_edit,
+            e_mid2_edit,
+            bones_mid2_edit,
+            center_mid2_edit,
+        ),
+        (
+            "Mid 2 (raw)",
+            "green",
+            "--",
+            j_mid2_raw,
+            e_mid2_raw,
+            bones_mid2_raw,
+            center_mid2_raw,
+        ),
+        (
+            "End (edited)",
+            "blue",
+            "-",
+            j_end_edit,
+            e_end_edit,
+            bones_end_edit,
+            center_end_edit,
+        ),
+        (
+            "End (raw)",
+            "blue",
+            "--",
+            j_end_raw,
+            e_end_raw,
+            bones_end_raw,
+            center_end_raw,
+        ),
     ]
 
     # 구(손끝 평균) 중심은 Start + mid1/2 edited + end edited 의 4개만 사용 (기존 규칙 유지)
@@ -438,7 +490,9 @@ def visualize_all_poses(
 
         # 평균 손끝 위치에 구 그리기 (오른쪽 뷰에만)
         if sphere_center is not None:
-            draw_hand_sphere(ax_focus, sphere_center, radius=HAND_SPHERE_RADIUS, color="k")
+            draw_hand_sphere(
+                ax_focus, sphere_center, radius=HAND_SPHERE_RADIUS, color="k"
+            )
 
         if visible_focus:
             pts = np.vstack(visible_focus)
@@ -472,7 +526,7 @@ def visualize_all_poses(
 def main():
     parser = argparse.ArgumentParser(
         description="input.bvh / input_patched_all.bvh에서 "
-                    "start/mid1/mid2/end (raw+edited) 7개 포즈 스켈레톤 비교 시각화"
+        "start/mid1/mid2/end (raw+edited) 7개 포즈 스켈레톤 비교 시각화"
     )
     parser.add_argument(
         "--input_bvh",
