@@ -41,22 +41,16 @@ def main():
         description="pelvis-test_result1.csv → pelvis-test_result2.csv 벡터를 wanted 좌표계로 변환하여 저장"
     )
     parser.add_argument(
-        "--src1",
-        type=str,
-        required=True,
-        help="pelvis-test_result1.csv 경로"
+        "--src1", type=str, required=True, help="pelvis-test_result1.csv 경로"
     )
     parser.add_argument(
-        "--src2",
-        type=str,
-        required=True,
-        help="pelvis-test_result2.csv 경로"
+        "--src2", type=str, required=True, help="pelvis-test_result2.csv 경로"
     )
     parser.add_argument(
         "--out",
         type=str,
         default="wanted.csv",
-        help="결과를 저장할 wanted.csv 경로 (기본값: ./position_vector.csv)"
+        help="결과를 저장할 wanted.csv 경로 (기본값: ./position_vector.csv)",
     )
 
     args = parser.parse_args()
@@ -65,9 +59,7 @@ def main():
     p2 = load_xyz_csv(args.src2)  # (N, 3)
 
     if p1.shape != p2.shape:
-        raise ValueError(
-            f"두 CSV의 shape가 다릅니다: {p1.shape} vs {p2.shape}"
-        )
+        raise ValueError(f"두 CSV의 shape가 다릅니다: {p1.shape} vs {p2.shape}")
 
     # pelvis 좌표계에서의 벡터 (2 - 1)
     diff_p = p2 - p1  # (N, 3)
@@ -77,14 +69,7 @@ def main():
 
     # 저장 (단위: cm)
     header = "x_w_cm,y_w_cm,z_w_cm"
-    np.savetxt(
-        args.out,
-        diff_w,
-        delimiter=",",
-        fmt="%.3f",
-        header=header,
-        comments=""
-    )
+    np.savetxt(args.out, diff_w, delimiter=",", fmt="%.3f", header=header, comments="")
 
     print(f"저장 완료: {args.out}")
     print("position 벡터 (wanted 좌표계, cm):", diff_w[0])
